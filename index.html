@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>My Media</title>
+
+<style>
+    body { background:#111; color:white; font-family:Arial; margin:0; }
+    #header { background:#222; padding:15px; font-size:26px; font-weight:bold; }
+    #content { padding:20px; }
+    .fileBox {
+        padding:15px;
+        background:#222;
+        border:1px solid #333;
+        margin-bottom:20px;
+        border-radius:8px;
+    }
+    audio, video {
+        width:100%;
+        margin-top:10px;
+        border-radius:8px;
+    }
+</style>
+</head>
+<body>
+
+<div id="header">My Uploads</div>
+<div id="content"><p>Loading files…</p></div>
+
+<script>
+// Repo info (THIS IS CORRECT for your site)
+const GITHUB_USERNAME = "sudoduck";
+const REPOSITORY_NAME = "sudoduck.github.io";
+const BRANCH = "main";
+
+// GitHub API tree listing (recursive = scans entire repo)
+const apiURL =
+`https://api.github.com/repos/${GITHUB_USERNAME}/${REPOSITORY_NAME}/git/trees/${BRANCH}?recursive=1`;
+
+async function loadUploads(){
+    const contentDiv = document.getElementById("content");
+
+    try {
+        const res = await fetch(apiURL);
+        if (!res.ok) {
+            contentDiv.innerHTML = "<p>Error loading repository.</p>";
+            return;
+        }
+
+        const data = await res.json();
+
+        // Find all mp3/mp4 anywhere in the repo
+        const mediaFiles = data.tree.filter(item =>
+            item.type === "blob" &&
+            (item.path.toLowerCase().endsWith(".mp3") ||
+             item.path.toLowerCase().endsWith(".mp4"))
+        );
+
+        if(mediaFiles.length === 0){
+            contentDiv.innerHTML = "<p>No media files found.</p>";
+            return;
+        }
+
+        contentDiv.innerHTML = "";
+
+        mediaFiles.forEach(file => {
+            const rawURL =
+              `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPOSITORY_NAME}/${BRANCH}/${file.path}`;
+
+            const box = document.createElement("div");
+            box.className = "fileBox";
+
+            box.innerHTML = `<b>${file.path}</b><br>`;
+
+            if (file.path.endsWith(".mp3")){
+                box.innerHTML += `<audio controls src="${rawURL}"></audio>`;
+            } else {
+                box.innerHTML += `<video controls src="${rawURL}"></video>`;
+            }
+
+            contentDiv.appendChild(box);
+        });
+
+    } catch (e) {
+        contentDiv.innerHTML = "<p>Error loading files.</p>";
+    }
+}
+
+loadUploads();
+</script>
+
+</body>
+</html>
